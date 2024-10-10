@@ -371,14 +371,18 @@ public class RouteMapGenerator implements IGui {
 		return null;
 	}
 
-	public static NativeImage generateRouteMap(long platformId, boolean vertical, boolean flip, float aspectRatio, boolean transparentWhite) {
+	public static NativeImage generateRouteMap(long platformId, boolean vertical, boolean flip, float aspectRatio, boolean transparentWhite, long restrictRoute) {
 		if (aspectRatio <= 0) {
 			return null;
 		}
 
 		try {
 			final ObjectArrayList<ObjectIntImmutablePair<SimplifiedRoute>> routeDetails = new ObjectArrayList<>();
-			getRouteStream(platformId, (simplifiedRoute, currentStationIndex) -> routeDetails.add(new ObjectIntImmutablePair<>(simplifiedRoute, currentStationIndex)));
+			getRouteStream(platformId, (simplifiedRoute, currentStationIndex) -> {
+				if(restrictRoute == 0 || simplifiedRoute.getId() == restrictRoute){
+					routeDetails.add(new ObjectIntImmutablePair<>(simplifiedRoute, currentStationIndex));
+				}
+			});
 			final int routeCount = routeDetails.size();
 
 			if (routeCount > 0) {

@@ -6,6 +6,7 @@ import org.mtr.core.serializer.ReaderBase;
 import org.mtr.core.tool.EnumHelper;
 import org.mtr.libraries.it.unimi.dsi.fastutil.objects.*;
 import org.mtr.mapping.holder.Box;
+import org.mtr.mapping.holder.Direction;
 import org.mtr.mapping.holder.Identifier;
 import org.mtr.mapping.holder.OverlayTexture;
 import org.mtr.mapping.holder.Vector3d;
@@ -16,6 +17,7 @@ import org.mtr.mapping.mapper.OptimizedRenderer;
 import org.mtr.mod.Init;
 import org.mtr.mod.MutableBox;
 import org.mtr.mod.client.CustomResourceLoader;
+import org.mtr.mod.client.DynamicTextureCache;
 import org.mtr.mod.client.IDrawing;
 import org.mtr.mod.data.IGui;
 import org.mtr.mod.data.VehicleExtension;
@@ -33,6 +35,7 @@ public final class ModelPropertiesPart extends ModelPropertiesPartSchema impleme
 
 	private final ObjectArrayList<PartDetails> partDetailsList = new ObjectArrayList<>();
 	private final ObjectArrayList<DisplayPartDetails> displayPartDetailsList = new ObjectArrayList<>();
+	private final ObjectArrayList<RouteMapPartDetails> routeMapPartDetailsList = new ObjectArrayList<>();
 	private final int displayColorCjkInt;
 	private final int displayColorInt;
 
@@ -62,6 +65,7 @@ public final class ModelPropertiesPart extends ModelPropertiesPartSchema impleme
 			Identifier texture,
 			Object2ObjectOpenHashMap<String, ObjectObjectImmutablePair<ModelPartExtension, MutableBox>> nameToPart,
 			Object2ObjectOpenHashMap<String, ModelDisplayPart> nameToDisplayPart,
+			Object2ObjectOpenHashMap<String, ModelRouteMapPart> nameToRouteMapPart,
 			PositionDefinitions positionDefinitionsObject,
 			ObjectArraySet<Box> floors,
 			ObjectArraySet<Box> doorways,
@@ -71,6 +75,7 @@ public final class ModelPropertiesPart extends ModelPropertiesPartSchema impleme
 		final ObjectArrayList<ModelPartExtension> modelParts = new ObjectArrayList<>();
 		final MutableBox mutableBox = new MutableBox();
 		final ObjectArrayList<ModelDisplayPart> modelDisplayParts = new ObjectArrayList<>();
+		final ObjectArrayList<ModelRouteMapPart> modelRouteMapParts = new ObjectArrayList<>();
 		final OptimizedModelWrapper optimizedModelDoor;
 
 		names.forEach(name -> {
@@ -83,6 +88,11 @@ public final class ModelPropertiesPart extends ModelPropertiesPartSchema impleme
 			final ModelDisplayPart modelDisplayPart = nameToDisplayPart.get(name);
 			if (modelDisplayPart != null) {
 				modelDisplayParts.add(modelDisplayPart);
+			}
+
+			final ModelRouteMapPart routeMapPart = nameToRouteMapPart.get(name);
+			if (routeMapPart != null) {
+				modelRouteMapParts.add(routeMapPart);
 			}
 		});
 
@@ -107,6 +117,9 @@ public final class ModelPropertiesPart extends ModelPropertiesPartSchema impleme
 					break;
 				case DISPLAY:
 					iteratePositions(positions, positionsFlipped, (x, y, z, flipped) -> displayPartDetailsList.add(new DisplayPartDetails(modelDisplayParts, x, y, z, flipped)));
+					break;
+				case ROUTE_MAP:
+					iteratePositions(positions, positionsFlipped, (x, y, z, flipped) -> routeMapPartDetailsList.add(new RouteMapPartDetails(modelRouteMapParts, x, y, z, flipped)));
 					break;
 				case FLOOR:
 					iteratePositions(positions, positionsFlipped, (x, y, z, flipped) -> mutableBox.getAll().forEach(box -> floors.add(addBox(box, x, y, z, flipped))));
@@ -170,6 +183,14 @@ public final class ModelPropertiesPart extends ModelPropertiesPartSchema impleme
 						} else {
 							MainRenderer.scheduleRender(QueuedRenderLayer.TEXT, (graphicsHolder, offset) -> renderDisplay(graphicsHolder, offset, storedMatrixTransformations, vehicle, false));
 						}
+					}
+					break;
+				case ROUTE_MAP:
+					if (vehicle != null) {
+						long platformId = vehicle.vehicleExtraData.getNextPlatformId();
+						long routeId = vehicle.vehicleExtraData.getThisRouteId();
+
+						MainRenderer.scheduleRender(DynamicTextureCache.instance.getRouteMap(platformId, false, false, 5, false/* change to true once positioning works */, routeId).identifier, false, QueuedRenderLayer.INTERIOR, (graphicsHolder, offset) -> renderRouteMap(graphicsHolder, offset, storedMatrixTransformations, vehicle, light));
 					}
 					break;
 			}
@@ -295,6 +316,25 @@ public final class ModelPropertiesPart extends ModelPropertiesPartSchema impleme
 					graphicsHolder.translate(0, textHeight, 0);
 				}
 
+				graphicsHolder.pop();
+			});
+		});
+
+		graphicsHolder.pop();
+	}
+
+	private void renderRouteMap(GraphicsHolder graphicsHolder, Vector3d offset, StoredMatrixTransformations storedMatrixTransformations, Vehicle vehicle, int light) {
+		storedMatrixTransformations.transform(graphicsHolder, offset);
+
+		routeMapPartDetailsList.forEach(routeMapPartDetails -> {
+			graphicsHolder.translate(routeMapPartDetails.x, routeMapPartDetails.y, routeMapPartDetails.z);
+			if (routeMapPartDetails.flipped) {
+				graphicsHolder.rotateYDegrees(180);
+			}
+
+			routeMapPartDetails.modelRouteMapParts.forEach(routeMapPart -> {
+				routeMapPart.storedMatrixTransformations.transform(graphicsHolder, new Vector3d(0, 0, 0));
+				IDrawing.drawTexture(graphicsHolder, 0, 0, routeMapPart.width, routeMapPart.height, Direction.UP, light);
 				graphicsHolder.pop();
 			});
 		});
@@ -464,6 +504,23 @@ public final class ModelPropertiesPart extends ModelPropertiesPartSchema impleme
 
 		private DisplayPartDetails(ObjectArrayList<ModelDisplayPart> modelDisplayParts, double x, double y, double z, boolean flipped) {
 			this.modelDisplayParts = modelDisplayParts;
+			this.x = x / 16;
+			this.y = y / 16;
+			this.z = z / 16;
+			this.flipped = flipped;
+		}
+	}
+
+	private static class RouteMapPartDetails {
+
+		private final ObjectArrayList<ModelRouteMapPart> modelRouteMapParts;
+		private final double x;
+		private final double y;
+		private final double z;
+		private final boolean flipped;
+
+		private RouteMapPartDetails(ObjectArrayList<ModelRouteMapPart> modelRouteMapParts, double x, double y, double z, boolean flipped) {
+			this.modelRouteMapParts = modelRouteMapParts;
 			this.x = x / 16;
 			this.y = y / 16;
 			this.z = z / 16;

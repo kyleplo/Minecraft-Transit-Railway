@@ -1,3 +1,3 @@
 package org.mtr.mod.resource;
 
-public enum PartType {NORMAL, DISPLAY, FLOOR, DOORWAY, SEAT}
+public enum PartType {NORMAL, DISPLAY, FLOOR, DOORWAY, SEAT, ROUTE_MAP}

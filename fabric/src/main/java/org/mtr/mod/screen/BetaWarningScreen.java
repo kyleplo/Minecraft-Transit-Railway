@@ -16,7 +16,7 @@ public class BetaWarningScreen extends ScreenExtension implements IGui, Utilitie
 	private static long openTime;
 	private static long lastMillis;
 	private static final int BUTTON_WIDTH = SQUARE_SIZE * 8;
-	private static final int FORCE_OPEN_DURATION = 20000;
+	private static final int FORCE_OPEN_DURATION = 1000;
 
 	public BetaWarningScreen() {
 		super();

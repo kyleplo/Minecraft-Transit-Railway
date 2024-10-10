@@ -38,10 +38,12 @@ public final class DynamicVehicleModel extends EntityModelExtension<EntityAbstra
 
 		final Object2ObjectOpenHashMap<String, ObjectObjectImmutablePair<ModelPartExtension, MutableBox>> nameToPart = new Object2ObjectOpenHashMap<>();
 		final Object2ObjectOpenHashMap<String, ModelDisplayPart> nameToDisplayPart = new Object2ObjectOpenHashMap<>();
+		final Object2ObjectOpenHashMap<String, ModelRouteMapPart> nameToRouteMapPart = new Object2ObjectOpenHashMap<>();
 		blockbenchModel.getOutlines().forEach(blockbenchOutline -> {
 			final ObjectHolder<ModelPartExtension> parentModelPart = new ObjectHolder<>(this::createModelPart);
 			final MutableBox mutableBox = new MutableBox();
 			final ObjectHolder<ModelDisplayPart> modelDisplayPart = new ObjectHolder<>(ModelDisplayPart::new);
+			final ObjectHolder<ModelRouteMapPart> modelRouteMapPart = new ObjectHolder<>(ModelRouteMapPart::new);
 
 			iterateChildren(blockbenchOutline, null, new GroupTransformations(), (uuid, groupTransformations) -> {
 				final BlockbenchElement blockbenchElement = uuidToBlockbenchElement.remove(uuid);
@@ -57,13 +59,17 @@ public final class DynamicVehicleModel extends EntityModelExtension<EntityAbstra
 			if (modelDisplayPart.exists()) {
 				nameToDisplayPart.put(blockbenchOutline.getName(), modelDisplayPart.createAndGet());
 			}
+
+			if(modelRouteMapPart.exists()) {
+				nameToRouteMapPart.put(blockbenchOutline.getName(), modelRouteMapPart.createAndGet());
+			}
 		});
 
 		buildModel();
 		modelProperties.addPartsIfEmpty(nameToPart.keySet());
 		this.texture = texture;
 		this.modelProperties = modelProperties;
-		modelProperties.iterateParts(modelPropertiesPart -> modelPropertiesPart.writeCache(texture, nameToPart, nameToDisplayPart, positionDefinitions, floors, doorways, materialGroupsForPartConditionAndRenderStage, materialGroupsForPartConditionAndRenderStageDoorsClosed));
+		modelProperties.iterateParts(modelPropertiesPart -> modelPropertiesPart.writeCache(texture, nameToPart, nameToDisplayPart, nameToRouteMapPart, positionDefinitions, floors, doorways, materialGroupsForPartConditionAndRenderStage, materialGroupsForPartConditionAndRenderStageDoorsClosed));
 		testDoors(id);
 	}
 

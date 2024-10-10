@@ -106,7 +106,11 @@ public class DynamicTextureCache implements IGui {
 	}
 
 	public DynamicResource getRouteMap(long platformId, boolean vertical, boolean flip, float aspectRatio, boolean transparentWhite) {
-		return getResource(String.format("route_map_%s_%s_%s_%s_%s", platformId, vertical, flip, aspectRatio, transparentWhite), () -> RouteMapGenerator.generateRouteMap(platformId, vertical, flip, aspectRatio, transparentWhite), transparentWhite ? DefaultRenderingColor.TRANSPARENT : DefaultRenderingColor.WHITE);
+		return getResource(String.format("route_map_%s_%s_%s_%s_%s_0", platformId, vertical, flip, aspectRatio, transparentWhite), () -> RouteMapGenerator.generateRouteMap(platformId, vertical, flip, aspectRatio, transparentWhite, 0), transparentWhite ? DefaultRenderingColor.TRANSPARENT : DefaultRenderingColor.WHITE);
+	}
+
+	public DynamicResource getRouteMap(long platformId, boolean vertical, boolean flip, float aspectRatio, boolean transparentWhite, long restrictRoute) {
+		return getResource(String.format("route_map_%s_%s_%s_%s_%s_%s", platformId, vertical, flip, aspectRatio, transparentWhite, restrictRoute), () -> RouteMapGenerator.generateRouteMap(platformId, vertical, flip, aspectRatio, transparentWhite, restrictRoute), transparentWhite ? DefaultRenderingColor.TRANSPARENT : DefaultRenderingColor.WHITE);
 	}
 
 	public byte[] getTextPixels(String text, int[] dimensions, int fontSizeCjk, int fontSize) {

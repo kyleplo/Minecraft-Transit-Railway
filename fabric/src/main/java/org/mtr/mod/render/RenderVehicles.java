@@ -117,6 +117,21 @@ public class RenderVehicles implements IGui {
 
 						// Each car can have more than one model defined
 						RenderVehicleHelper.renderModel(renderVehicleTransformationHelperOffset, oscillationAmount, storedMatrixTransformations -> {
+							// Render route map
+							final double newOscillationAmount = -Math.toRadians(oscillationAmount);
+
+							final Vector routeMapPosition1 = renderVehicleTransformationHelperOffset.transformForwards(new Vector(1.25, 2.5, 0).rotateZ(newOscillationAmount), Vector::rotateX, Vector::rotateY, Vector::add);
+							final Vector routeMapPosition2 = renderVehicleTransformationHelperOffset.transformForwards(new Vector(-1.25, 2.5, 0).rotateZ(newOscillationAmount), Vector::rotateX, Vector::rotateY, Vector::add);
+							final Vector routeMapPosition3 = renderVehicleTransformationHelperOffset.transformForwards(new Vector(-1.25, 3, -0.25).rotateZ(newOscillationAmount), Vector::rotateX, Vector::rotateY, Vector::add);
+							final Vector routeMapPosition4 = renderVehicleTransformationHelperOffset.transformForwards(new Vector(1.25, 3, -0.25).rotateZ(newOscillationAmount), Vector::rotateX, Vector::rotateY, Vector::add);
+
+							long platformId = vehicle.vehicleExtraData.getNextPlatformId();
+							long routeId = vehicle.vehicleExtraData.getThisRouteId();
+
+							MainRenderer.scheduleRender(DynamicTextureCache.instance.getRouteMap(platformId, false, false, 5, false/* change to true once positioning works */, routeId).identifier, false, QueuedRenderLayer.INTERIOR, (graphicsHolder, offset) -> renderVehicleTransformationHelperOffset.render(graphicsHolder, offset, newOffset -> {
+								drawTexture(graphicsHolder, routeMapPosition1, routeMapPosition2, routeMapPosition3, routeMapPosition4, newOffset, renderVehicleTransformationHelperAbsolute.light);
+							}));
+
 							if (OptimizedRenderer.hasOptimizedRendering()) {
 								vehicleResource.queue(storedMatrixTransformations, vehicle, renderVehicleTransformationHelperAbsolute.light, openDoorways);
 							}
